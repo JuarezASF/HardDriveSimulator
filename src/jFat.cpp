@@ -33,7 +33,7 @@ unsigned int jFat::getSectorIdxOfNextFreeCluster() const {
     for (unsigned int t = 0; t < TRACK_PER_CYLINDER; t++) {
         for (unsigned int cyl = 0; cyl < QTD_CYLINDERS; cyl++) {
             for (unsigned int clu = 0; clu < SECTORS_PER_CLUSTER; clu++) {
-                current_sector_idx = SECTORS_PER_CYLINDER * cyl + t * SECTOR_PER_TRACK + clu * SECTORS_PER_CLUSTER;
+                current_sector_idx = SECTORS_PER_CYLINDER * cyl + SECTOR_PER_TRACK*t + SECTORS_PER_CLUSTER*clu;
                 if (!sectorInfo[current_sector_idx].used) {
                     return current_sector_idx;
                 }
@@ -50,8 +50,8 @@ unsigned int jFat::getSectorIdxOfClusterContinuation(unsigned int sector_idx) co
     unsigned currentSectorAddr;
 
     unsigned int cyl = currentAddr.cylinder;
-    unsigned int clu = currentAddr.cluster;
     unsigned int t = currentAddr.track;
+    unsigned int clu = currentAddr.cluster;
 
 
     for (; cyl < QTD_CYLINDERS; cyl++) {
@@ -78,6 +78,35 @@ void jFat::markClusterAsUsed(const SectorAddr &s) {
         if (sectorInfo[addr + i].used)
             throw runtime_error("Sector id " + std::to_string(addr + i) + " is already in use!");
         sectorInfo[addr + i].used = 1;
+    }
+
+}
+
+void jFat::markClusterAsFree(const SectorAddr &s){
+    unsigned int addr = s.getSector();
+
+    if (addr % 4 != 0)
+        throw runtime_error("Addr of first sector on clust must be 0 mod 4!");
+    for (unsigned int i = 0; i < SECTORS_PER_CLUSTER; i++) {
+        if (!sectorInfo[addr + i].used)
+            throw runtime_error("Sector id " + std::to_string(addr + i) + " is not in use! Why you're freeing it?!");
+        sectorInfo[addr + i].used = 0;
+    }
+
+}
+
+void jFat::debugPrint() {
+    for (unsigned int cyl = 0; cyl < QTD_CYLINDERS; cyl++){
+        cout << "cylinder " << cyl << endl;
+        for(unsigned int t = 0; t < TRACK_PER_CYLINDER; t++){
+            cout << "\ttrack " << t << endl;
+            for(unsigned int sec = 0; sec < SECTOR_PER_TRACK; sec++){
+                unsigned int sector_id = cyl * SECTORS_PER_CYLINDER + t * SECTOR_PER_TRACK + sec;
+                cout << "\t sector" << sec << " used:" << sectorInfo[sector_id].used << endl;
+            }
+
+        }
+
     }
 
 }

@@ -47,6 +47,11 @@ public:
 
     void markClusterAsUsed(const SectorAddr &s);
 
+    void markClusterAsFree(const SectorAddr &s);
+
+    void debugPrint();
+
+
 
 };
 

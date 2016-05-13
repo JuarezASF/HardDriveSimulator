@@ -1,5 +1,7 @@
 #include <iostream>
+#include <fstream>
 #include "Structs.h"
+#include "jFat.h"
 
 using namespace std;
 
@@ -39,6 +41,17 @@ int main() {
 
     bool quitRequested = false;
     int option;
+
+    int fileSize;
+    char *fileBytesBuffer = nullptr;
+    int currentFileBufferSize = 0;
+    std::ifstream is;
+    int qtdOfRequiredCluster;
+    unsigned int currentSectorAddr;
+
+    jFat *fat = jFat::getInstance();
+
+
     while (!quitRequested) {
         show_menu();
         cin >> option;
@@ -48,8 +61,33 @@ int main() {
                 string filename;
                 cin >> filename;
 
-                if(!validateFilename(filename))
+                if (!validateFilename(filename))
                     continue;
+
+                if (is.is_open())
+                    is.close();
+                is.open(filename.c_str());
+                //find size of file
+                is.seekg(0, std::ios_base::end);
+                fileSize = is.tellg();
+                is.seekg(0, std::ios_base::beg);
+
+                //increase buffer size if necessary
+                if (currentFileBufferSize < fileSize) {
+                    if (fileBytesBuffer) {
+                        delete[] fileBytesBuffer;
+                    }
+                    fileBytesBuffer = new char[fileSize];
+                    currentFileBufferSize = fileSize;
+                }
+
+                //read entire file at once
+                is.read(fileBytesBuffer, fileSize);
+
+                qtdOfRequiredCluster = (int) (fileSize/(BYTES_PER_CLUSTER) + 0.5);
+
+                currentSectorAddr = fat->getSectorIdxOfNextFreeCluster();
+
 
 
                 break;
