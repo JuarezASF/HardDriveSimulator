@@ -1,0 +1,1 @@
+add_executable(DiskSimulator my_drive.cpp HardDiskSimulator.cpp HardDiskSimulator.h Structs.h Structs.cpp jFat.cpp jFat.h)

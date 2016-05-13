@@ -1,0 +1,1 @@
+add_executable(jFat_test jFat_test.cpp ../src/jFat.cpp ../src/jFat.h ../src/Structs.cpp ../src/Structs.h)
