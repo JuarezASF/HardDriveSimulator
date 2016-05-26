@@ -8,6 +8,7 @@
 #include <iostream>
 #include <unordered_map>
 #include "Structs.h"
+#include "HardDiskSimulator.h"
 
 using namespace std;
 
@@ -15,6 +16,7 @@ using namespace std;
 class jFat {
 
 private:
+    HardDiskSimulator *virtualDisk;
     jFat(unsigned int qtdSectors);
 
     unsigned int qtdSectors;
@@ -22,6 +24,8 @@ private:
     unordered_map<string, unsigned int> fileFirstSectorMap;
 
     fatEntry *sectorInfo;
+
+    bool checkAddr(unsigned int addr);
 
 
 public:
@@ -45,11 +49,39 @@ public:
      */
     unsigned int getSectorIdxOfClusterContinuation(unsigned int sector_idx) const;
 
+    /**
+     * A SectorAddr is received. The addr must be the beggining of a cluster. We set the sector
+     * on this addr and the next 4
+     */
+    void markClusterAsUsed(unsigned int sectorIdx);
     void markClusterAsUsed(const SectorAddr &s);
 
-    void markClusterAsFree(const SectorAddr &s);
+    unsigned int markClusterAsFree(const SectorAddr &s);
+    unsigned int markClusterAsFree(unsigned int addr);
+
+    void setContinuationOfSector(const SectorAddr &s, unsigned int continuationAddr);
+    void setContinuationOfSector(unsigned  int clusterIdx, unsigned int continuationAddr);
+
+    void setSectorAsEOF(unsigned  int clusterIdx);
 
     void debugPrint();
+
+    void printFatTable();
+
+    bool addFileFirstSector(string filename, unsigned int firstSectorAddr);
+
+    bool hasFile(string filename);
+
+    unsigned int getFirstSectorOfFile(string filename);
+
+    unsigned int getContinuationOfSector(unsigned int addr);
+
+    bool isSectorLasfOfFile(unsigned int addr);
+
+    inline void setVirtualHardDisk(HardDiskSimulator *ptr){ virtualDisk = ptr;}
+
+    void removeEntry(string filename);
+
 
 
 

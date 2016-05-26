@@ -18,8 +18,17 @@ private:
     void zeroOutCylinders();
 
 
+
 public:
-    HardDiskSimulator(track_array *cylinders);
+    HardDiskSimulator(track_array *cylinders, unsigned int qtdCylinders);
+
+    void writeToSector(char *buffer, unsigned int size, unsigned int sectorIdx);
+
+    void clearSector(unsigned int sectorIdx);
+
+    void readSector(unsigned int sectorIdx, char *output_buffer, unsigned short *outputSize);
+
+    unsigned short getQtdWrittenOnSector(unsigned int sectorIdx);
 
 };
 

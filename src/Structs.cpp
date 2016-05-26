@@ -1,51 +1,63 @@
 #include <stdexcept>
+#include <iostream>
 #include "Structs.h"
-#include "exception"
-#include "string"
-SectorAddr::SectorAddr(unsigned int cyl, unsigned int t, unsigned clu) : cylinder(cyl), track(t), cluster(clu) {
-    validate(cyl, t, clu);
 
+
+SectorAddr::SectorAddr() {
+    cylinder = 0;
+    trackInsideCylinder = 0;
+    sectorInsideTrack = 0;
+    clusterInsideTrack = 0;
+    sectorInsideCluster = 0;
+    sectorInsideCylinder = 0;
+    sectorInsideDisk = 0;
 }
 
-SectorAddr::SectorAddr() : cylinder(0), track(0), cluster(0) {
-}
+SectorAddr SectorAddr::getClusterDetailedAddr(unsigned int absolute) {
+    SectorAddr out;
 
-SectorAddr SectorAddr::getCTC_fromAbsolute(unsigned int absolute) {
-    unsigned int cyl, t, clu;
-    absolute /= 4;
-    clu = absolute % 15;
-    absolute -= clu;
-    absolute /= 15;
-    t = absolute % 5;
-    cyl = (absolute - t) / 5;
-    return SectorAddr(cyl, t, clu);
-}
+    if (absolute > LAST_VALID_SECTOR_ADDR){
+        std::cerr << "INVALID absulute sector addr!" << std::endl;
+    }
 
-unsigned int SectorAddr::getSectorFromCTC(const SectorAddr &s) {
-    return SECTORS_PER_CYLINDER * s.cylinder + s.track * SECTOR_PER_TRACK + s.cluster * SECTORS_PER_CLUSTER;
+    out.sectorInsideDisk = absolute;
+    out.sectorInsideCluster = absolute % SECTORS_PER_CLUSTER;
+    out.sectorInsideTrack = absolute % SECTOR_PER_TRACK;
+    out.sectorInsideCylinder = absolute % SECTORS_PER_CYLINDER;
+
+    out.cylinder = absolute / SECTORS_PER_CYLINDER;
+
+    out.trackInsideCylinder = out.sectorInsideCylinder / SECTOR_PER_TRACK;
+
+    out.clusterInsideTrack = out.sectorInsideTrack / CLUSTERS_PER_TRACK;
+
+    return out;
 }
 
 
 SectorAddr &SectorAddr::operator=(const SectorAddr &A) {
-    validate(A.cylinder, A.track, A.cluster);
     cylinder = A.cylinder;
-    track = A.track;
-    cluster = A.cluster;
+    trackInsideCylinder = A.trackInsideCylinder;
+    sectorInsideTrack = A.sectorInsideTrack;
+    clusterInsideTrack = A.clusterInsideTrack;
+    sectorInsideCluster = A.sectorInsideCluster;
+    sectorInsideCylinder = A.sectorInsideCylinder;
+    sectorInsideDisk = A.sectorInsideDisk;
+
     return *this;
 }
 
-unsigned int SectorAddr::getSector() const {
-    return SectorAddr::getSectorFromCTC(*this);
-}
 
-void SectorAddr::validate(unsigned int cyl, unsigned int t, unsigned int clu) {
-    if (clu >= CLUSTERS_PER_TRACK)
-        throw std::runtime_error("Invalid cluster idx:" + std::to_string(clu));
-
-    if (t >= TRACK_PER_CYLINDER)
-        throw std::runtime_error("Invalid track idx:" + std::to_string(t));
-
-    if (cyl >= QTD_CYLINDERS)
-        throw std::runtime_error("Invalid cylinder idx:" + std::to_string(cyl));
+SectorAddr::SectorAddr(uint cyl, uint trackInCyl, uint clusterInTrack) {
+    if(clusterInTrack >= CLUSTERS_PER_TRACK){
+        throw std::runtime_error("Invalid cluster addr inside track!");
+    }
+    if(trackInCyl >= TRACK_PER_CYLINDER){
+        throw std::runtime_error("Invalid track addr inside cylinder!");
+    }
+    if(cyl >= QTD_CYLINDERS){
+        throw std::runtime_error("Invalid cylinder number!");
+    }
+   *this = SectorAddr::getClusterDetailedAddr(cyl * SECTORS_PER_CYLINDER + trackInCyl * SECTOR_PER_TRACK + clusterInTrack * SECTORS_PER_CLUSTER);
 
 }

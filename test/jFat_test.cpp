@@ -59,8 +59,8 @@ int main() {
             fat->markClusterAsUsed(SectorAddr(i, 0, 0));
             fat->markClusterAsFree(SectorAddr(i, 0, 0));
         } catch (std::runtime_error e) {
-            assert(string("There should be no exception here!").length() == 0);
             cout << e.what() << endl;
+            assert(string("There should be no exception here!").length() == 0);
         }
     }
     //test for all valid tracks

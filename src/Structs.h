@@ -5,18 +5,29 @@
 #ifndef DISKSIMULATOR_STRUCTS_H
 #define DISKSIMULATOR_STRUCTS_H
 
-#define BYTES_PER_SECTOR 512
-#define SECTOR_PER_TRACK 60
-#define TRACK_PER_CYLINDER 5
-#define QTD_CYLINDERS 10
-#define SECTORS_PER_CLUSTER 4
-#define SECTORS_PER_CYLINDER 300
-#define CLUSTERS_PER_TRACK 15
-#define BYTES_PER_CLUSTER SECTORS_PER_CLUSTER*BYTES_PER_SECTOR
-#define INVALID_DISK_POS 0xFFFFFFFF
+typedef unsigned int uint;
+
+#define BYTES_PER_SECTOR (unsigned int)512
+#define SECTOR_PER_TRACK (unsigned int)60
+#define SECTORS_PER_CLUSTER (unsigned int)4
+#define TRACK_PER_CYLINDER (unsigned int)5
+#define QTD_CYLINDERS (unsigned int)4
+
+#define SECTORS_PER_CYLINDER (unsigned int)((SECTOR_PER_TRACK)*(TRACK_PER_CYLINDER))
+#define CLUSTERS_PER_TRACK (unsigned int)(SECTOR_PER_TRACK)/(SECTORS_PER_CLUSTER)
+#define SECTORS_PER_DISK (uint)(SECTORS_PER_CYLINDER)*(QTD_CYLINDERS)
+
+#define BYTES_PER_CLUSTER (uint)(SECTORS_PER_CLUSTER)*(BYTES_PER_SECTOR)
+#define BYTES_PER_TRACK (uint)(BYTES_PER_CLUSTER)*(CLUSTERS_PER_TRACK)
+#define BYTES_PER_CYLINDER (uint)(BYTES_PER_TRACK)*(TRACK_PER_CYLINDER)
+#define BYTES_PER_DISK (uint)(BYTES_PER_CYLINDER)*(QTD_CYLINDERS)
+
+#define LAST_VALID_SECTOR_ADDR (uint)((SECTORS_PER_DISK)-1)
+#define INVALID_DISK_POS ((uint)0xFFFFFFFF)
 
 typedef struct block {
     unsigned char bytes_s[BYTES_PER_SECTOR];
+    unsigned short qtdOfUsedBytes;
 } block;
 
 typedef struct sector_array {
@@ -44,21 +55,22 @@ typedef fatent fatEntry;
 
 class SectorAddr {
 private:
-    void validate(unsigned int cyl, unsigned int t, unsigned int clu);
-public:
-    unsigned int cylinder, track, cluster;
-
-    SectorAddr(unsigned int cyl, unsigned int t, unsigned clu);
-
     SectorAddr();
 
-    static SectorAddr getCTC_fromAbsolute(unsigned int absolute);
+public:
+    unsigned int cylinder;
+    unsigned int trackInsideCylinder ;
+    unsigned int sectorInsideTrack;
+    unsigned int clusterInsideTrack;
+    unsigned int sectorInsideCluster;
+    unsigned int sectorInsideCylinder;
+    unsigned int sectorInsideDisk;
 
-    static unsigned int getSectorFromCTC(const SectorAddr &s);
+    SectorAddr(uint cyl, uint trackInCyl, uint clusterInTrack);
+
+    static SectorAddr getClusterDetailedAddr(uint absolute);
 
     SectorAddr &operator=(const SectorAddr &A);
-
-    unsigned int getSector() const;
 
 
 };
