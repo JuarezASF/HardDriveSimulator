@@ -1,3 +1,19 @@
+/***
+ *
+ * Universidade de Brasília
+ *
+ * 1/2016
+ *
+ * Organização de Arquivos
+ *
+ * Aluno:
+ *
+ *      Juarez Aires Sampaio Filho
+ *      matrícula 11/0032829
+ *
+ */
+
+
 #include <iostream>
 #include <fstream>
 #include "Structs.h"
@@ -7,33 +23,36 @@ using namespace std;
 
 
 static string valid_extension = ".txt";
-bool debugOn = false;
+bool debugOn = true;
 
+/**
+ * Mostra menu
+ */
 void show_menu() {
     cout << "1 - Escrever Arquivo" << endl;
     cout << "2 - Ler Arquivo" << endl;
     cout << "3 - Apagar Arquivo" << endl;
     cout << "4 - Mostrar Tablea FAT" << endl;
     cout << "5 - Sair" << endl;
-    if(debugOn){
+    if (debugOn) {
         cout << "6 - Debug print" << endl;
 
     }
     cout << ">";
 }
 
+/***
+ * checa se string entrada bate com a extensão de arquivo esperada
+ */
 bool validateFilename(string fn) {
-    /***
-     * checa se string entrada bate com a extensão de arquivo esperada
-     */
     if (fn.find(".") == std::string::npos) {
-        cout << "cannot find file extension!" << endl;
+        cout << "Nome de arquivo inválido!" << endl;
         return false;
     }
 
     string ext = fn.substr(fn.find('.'), 4);
     if (ext.compare(valid_extension) != 0) {
-        cout << "invalid extension " << ext << endl;
+        cout << "Extensão de arquivo inválida!" << ext << endl;
         return false;
     }
 
@@ -63,6 +82,7 @@ int main() {
     jFat *fat = jFat::getInstance();
     fat->setVirtualHardDisk(&virtualDisk);
     string filename;
+    double operation_time;
 
     unsigned int currentStartofClusterSectorAddr;
     unsigned int lastClusterSectorAddr;
@@ -86,8 +106,8 @@ int main() {
                 if (is.is_open())
                     is.close();
                 is.open(filename.c_str());
-                if(!is.is_open()){
-                    cerr << "Cannot load file " << filename << " from disk!" << endl;
+                if (!is.is_open()) {
+                    cerr << "Arquivo de entrada " << filename << " não encontrado!" << endl;
                     break;
                 }
                 //find size of file
@@ -118,39 +138,43 @@ int main() {
                 //tries to allocate fat entry for new file
                 currentStartofClusterSectorAddr = fat->getSectorIdxOfNextFreeCluster();
                 if (currentStartofClusterSectorAddr == INVALID_DISK_POS) {
-                    throw runtime_error("Cannot find addr for new required cluster!");
+                    throw runtime_error("Operacao de achar endereço para novo cluster falho!");
                 }
                 if (!fat->addFileFirstSector(filename, currentStartofClusterSectorAddr)) {
-                    cerr << "Cannot proceed! Delete the file first!" << endl;
+                    cerr << "Problem ao criar entrada na FAT! Delete o arquivo previamente criado com mesmo nome!" << endl;
                     break;
 
                 }
 
                 int lastSectorInsideClusterWritten;
+
+                // assumes first seek comes from a random position
+                operation_time = MEAN_SEEK_TIME;
+                virtualDisk.positionHead(SectorAddr::getClusterDetailedAddr(currentStartofClusterSectorAddr));
                 while (qtdWrittenBytes < fileSize) {
                     if (lastClusterSectorAddr != INVALID_DISK_POS) {
-                        currentStartofClusterSectorAddr = fat->getSectorIdxOfClusterContinuation(currentStartofClusterSectorAddr);
+                        currentStartofClusterSectorAddr = fat->getSectorIdxOfClusterContinuation(
+                                currentStartofClusterSectorAddr);
                         fat->setContinuationOfSector(lastClusterSectorAddr + SECTORS_PER_CLUSTER - 1,
                                                      currentStartofClusterSectorAddr);
                     }
 
 
                     if (currentStartofClusterSectorAddr == INVALID_DISK_POS) {
-                        throw runtime_error("Cannot find addr for new required cluster!");
+                        throw runtime_error("Falha ao procurar por endereço de novo cluster!");
                     }
 
 
                     for (int i = 0; i < SECTORS_PER_CLUSTER; i++) {
 
 
-
-                        unsigned int qtdToWriteNow = min((unsigned int)512, fileSize - qtdWrittenBytes);
-                        if(qtdToWriteNow == 0){
+                        unsigned int qtdToWriteNow = min((unsigned int) 512, fileSize - qtdWrittenBytes);
+                        if (qtdToWriteNow == 0) {
                             break;
 
                         }
                         virtualDisk.writeToSector(fileBytesBuffer + BYTES_PER_SECTOR * (sectorsWritten++),
-                                                  qtdToWriteNow, currentStartofClusterSectorAddr + i);
+                                                  qtdToWriteNow, currentStartofClusterSectorAddr + i, &operation_time);
 
                         qtdWrittenBytes += qtdToWriteNow;
                         lastSectorInsideClusterWritten = i;
@@ -167,8 +191,10 @@ int main() {
                 fat->setSectorAsEOF(lastClusterSectorAddr + lastSectorInsideClusterWritten);
 
 
-
                 is.close();
+
+                cout << "Pronto!" << endl;
+                cout << "Tempo(virtual) de execução: " << operation_time << " ms" << endl;
 
 
                 break;
@@ -194,19 +220,21 @@ int main() {
                     os.close();
                 os.open(outfilename.c_str(), ios::binary | ios::out | ios::trunc);
 
-                if (!os.is_open()){
-                    cerr << "Cannot open file " << outfilename << " for output!" << endl;
+                if (!os.is_open()) {
+                    cerr << "Arquivo de saida " << outfilename << " nao pode ser aberto!" << endl;
                     break;
                 }
 
-
+                // assumes first seek comes from a random position
+                operation_time = MEAN_SEEK_TIME;
+                virtualDisk.positionHead(SectorAddr::getClusterDetailedAddr(currentStartofClusterSectorAddr));
                 while (true) {
                     if (currentSectorAddr == INVALID_DISK_POS) {
 
-                        cerr << "Cannot proceed due to invalid disk pos read!" << endl;
+                        cerr << "Posicao invalida!" << endl;
                         break;
                     }
-                    virtualDisk.readSector(currentSectorAddr, readBuffer, &bytesRead);
+                    virtualDisk.readSector(currentSectorAddr, readBuffer, &bytesRead, &operation_time);
 
                     os.write(readBuffer, bytesRead);
 
@@ -220,8 +248,9 @@ int main() {
 
                 os.flush();
                 os.close();
-                cout << "Done reading file!" << endl;
-                cout << "Output written to " << outfilename << endl;
+                cout << "Leitura concluida!" << endl;
+                cout << "Saida escrita para: " << outfilename << endl;
+                cout << "Tempo de execução: " << operation_time << " ms" << endl;
 
                 break;
             case 3:
@@ -238,13 +267,14 @@ int main() {
 
                 currentSectorAddr = fat->getFirstSectorOfFile(filename);
 
-                while((currentSectorAddr = fat->markClusterAsFree(currentSectorAddr)) != INVALID_DISK_POS) {
+                //marca todos os setores associados ao arquivo como livres
+                while ((currentSectorAddr = fat->markClusterAsFree(currentSectorAddr)) != INVALID_DISK_POS) {
                 }
 
-
+                // remove entrada da tabela FAT do arquivo
                 fat->removeEntry(filename);
 
-                cout << "Done removing file!" << endl;
+                cout << "Remocao concluida!" << endl;
                 break;
             case 4:
                 fat->printFatTable();
@@ -254,7 +284,7 @@ int main() {
                 quitRequested = true;
                 break;
             case 6:
-                if(!debugOn){
+                if (!debugOn) {
                     cout << "Opção inválida!" << endl;
                     break;
                 }
