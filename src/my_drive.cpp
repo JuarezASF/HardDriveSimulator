@@ -23,7 +23,7 @@ using namespace std;
 
 
 static string valid_extension = ".txt";
-bool debugOn = true;
+bool debugOn = false;
 
 /**
  * Mostra menu
@@ -62,7 +62,6 @@ bool validateFilename(string fn) {
 
 int main() {
 
-    debugOn = true;
     track_array *cylinder = new track_array[QTD_CYLINDERS];
 
     bool quitRequested = false;
@@ -93,6 +92,8 @@ int main() {
 
     while (!quitRequested) {
         show_menu();
+
+        //continua somente com entrada válida
         cin >> option;
         switch (option) {
             case 1:
