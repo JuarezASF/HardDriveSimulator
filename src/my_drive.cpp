@@ -178,6 +178,10 @@ int main() {
 
                         qtdWrittenBytes += qtdToWriteNow;
                         lastSectorInsideClusterWritten = i;
+                        if (qtdWrittenBytes >= fileSize) {
+                            break;
+
+                        }
 
 
                     }

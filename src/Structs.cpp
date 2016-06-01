@@ -29,7 +29,7 @@ SectorAddr SectorAddr::getClusterDetailedAddr(unsigned int absolute) {
 
     out.trackInsideCylinder = out.sectorInsideCylinder / SECTOR_PER_TRACK;
 
-    out.clusterInsideTrack = out.sectorInsideTrack / CLUSTERS_PER_TRACK;
+    out.clusterInsideTrack = out.sectorInsideTrack / SECTORS_PER_CLUSTER;
 
     return out;
 }

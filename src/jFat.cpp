@@ -50,9 +50,9 @@ unsigned int jFat::getSectorIdxOfClusterContinuation(unsigned int sector_idx) co
     SectorAddr currentAddr = SectorAddr::getClusterDetailedAddr(sector_idx);
     unsigned currentSectorAddr;
 
-    uint cyl = currentAddr.cylinder;
-    uint t = currentAddr.trackInsideCylinder;
-    uint clu = currentAddr.clusterInsideTrack;
+    unsigned int cyl = currentAddr.cylinder;
+    unsigned int t = currentAddr.trackInsideCylinder + 1;
+    unsigned int clu = currentAddr.clusterInsideTrack;
 
 
     for (; cyl < QTD_CYLINDERS; cyl++) {
@@ -178,8 +178,8 @@ void jFat::setSectorAsEOF(unsigned int addr) {
     uint k = addr % SECTORS_PER_CLUSTER;
 
     while(k != SECTORS_PER_CLUSTER ){
-        sectorInfo[k].eof = 1;
-        sectorInfo[k].next= INVALID_DISK_POS;
+        sectorInfo[addr + k].eof = 1;
+        sectorInfo[addr + k].next= INVALID_DISK_POS;
         k++;
     }
 
